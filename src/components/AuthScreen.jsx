@@ -131,7 +131,12 @@ function mapFirebaseError(code) {
 function Shell({ children }) {
   return (
     <div style={{ width: "100%", height: "100vh", background: "#EDEAE3", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div style={{ width: 380, background: "#FFFFFF", borderRadius: 20, padding: "36px 32px", boxShadow: "0 20px 60px rgba(43,38,30,0.18)", animation: "fadeUp 0.4s ease" }}>
+      <style>{`
+        @media (max-width: 480px) {
+          .auth-card { max-width: 100% !important; box-shadow: none !important; border-radius: 16px !important; }
+        }
+      `}</style>
+      <div className="auth-card" style={{ width: "100%", maxWidth: 380, background: "#FFFFFF", borderRadius: 20, padding: "36px 32px", boxShadow: "0 20px 60px rgba(43,38,30,0.18)", animation: "fadeUp 0.4s ease" }}>
         {children}
       </div>
     </div>

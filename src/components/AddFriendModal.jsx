@@ -57,8 +57,8 @@ export default function AddFriendModal({ me, onClose }) {
   }
 
   return (
-    <div style={{ position: "absolute", inset: 0, background: "rgba(43,38,30,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10 }}>
-      <div style={{ width: 340, background: "#fff", borderRadius: 18, padding: 26, animation: "fadeUp 0.25s ease" }}>
+    <div style={{ position: "absolute", inset: 0, background: "rgba(43,38,30,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10, padding: 16 }}>
+      <div style={{ width: "100%", maxWidth: 340, background: "#fff", borderRadius: 18, padding: 26, animation: "fadeUp 0.25s ease" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
           <ArrowLeft size={18} style={{ cursor: "pointer" }} onClick={onClose} />
           <h2 style={{ fontFamily: "'Poppins', sans-serif", fontSize: 16, fontWeight: 600, color: "#2B261E", margin: 0 }}>

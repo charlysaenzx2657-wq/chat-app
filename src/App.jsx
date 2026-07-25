@@ -80,9 +80,9 @@ export default function App() {
   const showingChat = !!activeChat;
 
   return (
-    <div style={{ width: "100%", height: "100vh", background: "#EDEAE3", display: "flex", justifyContent: "center", alignItems: "center", padding: 16 }}>
+    <div className="app-outer" style={{ width: "100%", height: "100vh", background: "#EDEAE3", display: "flex", justifyContent: "center", alignItems: "center", padding: 16 }}>
       <GlobalStyles />
-      <div style={{ width: "100%", maxWidth: 480, height: "min(760px, 100%)", display: "flex", background: "#FFFFFF", borderRadius: 20, overflow: "hidden", boxShadow: "0 20px 60px rgba(43,38,30,0.18)", position: "relative" }}>
+      <div className="app-shell" style={{ width: "100%", maxWidth: 480, height: "min(760px, 100%)", display: "flex", background: "#FFFFFF", borderRadius: 20, overflow: "hidden", boxShadow: "0 20px 60px rgba(43,38,30,0.18)", position: "relative" }}>
         {/* Lista de contactos: se oculta al abrir un chat */}
         <div
           style={{
@@ -161,6 +161,20 @@ function GlobalStyles() {
       button { transition: transform 0.12s ease, opacity 0.12s ease; }
       button:active { transform: scale(0.96); }
       button:hover { opacity: 0.92; }
+
+      @media (max-width: 600px) {
+        .app-outer {
+          padding: 0 !important;
+        }
+        .app-shell {
+          max-width: 100% !important;
+          width: 100% !important;
+          height: 100vh !important;
+          height: 100dvh !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+        }
+      }
     `}</style>
   );
 }

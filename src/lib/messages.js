@@ -8,7 +8,6 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 
-// Datos de tu cuenta gratuita de Cloudinary (ver README para obtenerlos)
 const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
@@ -27,28 +26,43 @@ export async function sendMessage({ chatId, senderUid, text }) {
   });
 }
 
-// Sube el archivo a Cloudinary (gratis, sin datos fiscales) y guarda el mensaje con su URL
-export async function sendFileMessage({ chatId, senderUid, file }) {
-  console.log("Cloudinary configurado:", Boolean(CLOUDINARY_CLOUD_NAME), Boolean(CLOUDINARY_UPLOAD_PRESET));
+// Sube el archivo a Cloudinary con progreso real (0-100), usando XHR en vez de fetch
+// porque fetch no reporta avance de subida.
+function uploadToCloudinary(file, onProgress) {
+  return new Promise((resolve, reject) => {
+    if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+      reject(new Error("Falta configurar Cloudinary (revisa el .env)"));
+      return;
+    }
 
-  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
-    throw new Error("Falta configurar Cloudinary (revisa el .env)");
-  }
+    const form = new FormData();
+    form.append("file", file);
+    form.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
 
-  const form = new FormData();
-  form.append("file", file);
-  form.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`);
 
-  const res = await fetch(
-    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`,
-    { method: "POST", body: form }
-  );
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
 
-  if (!res.ok) {
-    throw new Error("No se pudo subir el archivo");
-  }
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(JSON.parse(xhr.responseText));
+      } else {
+        reject(new Error("No se pudo subir el archivo"));
+      }
+    };
+    xhr.onerror = () => reject(new Error("No se pudo subir el archivo"));
 
-  const data = await res.json();
+    xhr.send(form);
+  });
+}
+
+export async function sendFileMessage({ chatId, senderUid, file, onProgress }) {
+  const data = await uploadToCloudinary(file, onProgress);
 
   await addDoc(collection(db, "chats", chatId, "messages"), {
     sender: senderUid,
