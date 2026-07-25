@@ -12,10 +12,10 @@ import { doc, getDoc, onSnapshot } from "firebase/firestore";
 
 export default function App() {
   const [authChecked, setAuthChecked] = useState(false);
-  const [user, setUser] = useState(null); // firebase auth user
-  const [profile, setProfile] = useState(null); // {uid, name, email, code}
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [requests, setRequests] = useState([]);
-  const [chats, setChats] = useState([]); // enriched with otherName
+  const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
   const [showAddFriend, setShowAddFriend] = useState(false);
 
@@ -32,9 +32,6 @@ export default function App() {
       }
 
       if (u) {
-        // Escucha el documento del perfil en tiempo real: si el registro aún
-        // no terminó de guardarlo, este listener lo recoge en cuanto aparezca,
-        // en vez de quedarse con una sola lectura vacía.
         unsubProfile = onSnapshot(doc(db, "users", u.uid), (snap) => {
           setProfile(snap.exists() ? snap.data() : null);
         });
@@ -80,13 +77,22 @@ export default function App() {
   }
 
   const activeChat = chats.find((c) => c.id === activeChatId) || null;
+  const showingChat = !!activeChat;
 
   return (
     <div style={{ width: "100%", height: "100vh", background: "#EDEAE3", display: "flex", justifyContent: "center", alignItems: "center", padding: 16 }}>
       <GlobalStyles />
-      <div style={{ width: "100%", maxWidth: 980, height: "min(720px, 100%)", display: "flex", background: "#FFFFFF", borderRadius: 20, overflow: "hidden", boxShadow: "0 20px 60px rgba(43,38,30,0.18)", position: "relative" }}>
-        {/* Sidebar */}
-        <div style={{ width: 320, flexShrink: 0, background: "#F7F5F1", display: "flex", flexDirection: "column", borderRight: "1px solid #E7E2D8" }}>
+      <div style={{ width: "100%", maxWidth: 480, height: "min(760px, 100%)", display: "flex", background: "#FFFFFF", borderRadius: 20, overflow: "hidden", boxShadow: "0 20px 60px rgba(43,38,30,0.18)", position: "relative" }}>
+        {/* Lista de contactos: se oculta al abrir un chat */}
+        <div
+          style={{
+            width: "100%",
+            flexShrink: 0,
+            background: "#F7F5F1",
+            display: showingChat ? "none" : "flex",
+            flexDirection: "column",
+          }}
+        >
           <div style={{ padding: "20px 18px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <Avatar name={profile.name} size={38} />
@@ -122,7 +128,7 @@ export default function App() {
               <div
                 key={c.id}
                 onClick={() => setActiveChatId(c.id)}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 18px", cursor: "pointer", background: c.id === activeChatId ? "#E9E4D8" : "transparent" }}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 18px", cursor: "pointer" }}
               >
                 <Avatar name={c.otherName} />
                 <span style={{ fontSize: 14.5, fontWeight: 600, color: "#2B261E", fontFamily: "'Poppins', sans-serif" }}>{c.otherName}</span>
@@ -131,7 +137,10 @@ export default function App() {
           </div>
         </div>
 
-        <ChatWindow chat={activeChat} me={profile} />
+        {/* Chat: solo se muestra cuando hay uno activo, con botón de regreso */}
+        {showingChat && (
+          <ChatWindow chat={activeChat} me={profile} onBack={() => setActiveChatId(null)} />
+        )}
 
         {showAddFriend && <AddFriendModal me={profile} onClose={() => setShowAddFriend(false)} />}
       </div>

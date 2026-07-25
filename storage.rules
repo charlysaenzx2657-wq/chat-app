@@ -1,0 +1,12 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Solo usuarios con sesión iniciada pueden subir o ver archivos de chat.
+    // (La validación de que sea miembro del chat ya ocurre en Firestore;
+    // aquí protegemos que nadie sin cuenta pueda leer o escribir.)
+    match /chats/{chatId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.resource.size < 10 * 1024 * 1024;
+    }
+  }
+}

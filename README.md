@@ -1,6 +1,6 @@
 # Charlas — Chat en tiempo real (React + Firebase)
 
-App de mensajería entre amigos: te registras con correo, obtienes un código único de 6 caracteres, y solo la gente que tenga tu código puede encontrarte y enviarte una solicitud de amistad. Una vez aceptada, chatean en tiempo real..
+App de mensajería entre amigos: te registras con correo, obtienes un código único de 6 caracteres, y solo la gente que tenga tu código puede encontrarte y enviarte una solicitud de amistad. Una vez aceptada, chatean en tiempo real.
 
 ## Funciona así
 
