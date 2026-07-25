@@ -29,6 +29,8 @@ export async function sendMessage({ chatId, senderUid, text }) {
 
 // Sube el archivo a Cloudinary (gratis, sin datos fiscales) y guarda el mensaje con su URL
 export async function sendFileMessage({ chatId, senderUid, file }) {
+  console.log("Cloudinary configurado:", Boolean(CLOUDINARY_CLOUD_NAME), Boolean(CLOUDINARY_UPLOAD_PRESET));
+
   if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
     throw new Error("Falta configurar Cloudinary (revisa el .env)");
   }
