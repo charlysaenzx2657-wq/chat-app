@@ -5,10 +5,10 @@ import AddFriendModal from "./components/AddFriendModal";
 import RequestsPanel from "./components/RequestsPanel";
 import ChatWindow from "./components/ChatWindow";
 import Avatar from "./components/Avatar";
-import { watchAuthState, getUserProfile, logoutUser } from "./lib/auth";
+import { watchAuthState, logoutUser } from "./lib/auth";
 import { watchIncomingRequests, watchMyChats } from "./lib/friends";
 import { db } from "./firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
 
 export default function App() {
   const [authChecked, setAuthChecked] = useState(false);
@@ -20,17 +20,33 @@ export default function App() {
   const [showAddFriend, setShowAddFriend] = useState(false);
 
   useEffect(() => {
-    const unsub = watchAuthState(async (u) => {
+    let unsubProfile = null;
+
+    const unsubAuth = watchAuthState((u) => {
       setUser(u);
+      setAuthChecked(true);
+
+      if (unsubProfile) {
+        unsubProfile();
+        unsubProfile = null;
+      }
+
       if (u) {
-        const p = await getUserProfile(u.uid);
-        setProfile(p);
+        // Escucha el documento del perfil en tiempo real: si el registro aún
+        // no terminó de guardarlo, este listener lo recoge en cuanto aparezca,
+        // en vez de quedarse con una sola lectura vacía.
+        unsubProfile = onSnapshot(doc(db, "users", u.uid), (snap) => {
+          setProfile(snap.exists() ? snap.data() : null);
+        });
       } else {
         setProfile(null);
       }
-      setAuthChecked(true);
     });
-    return unsub;
+
+    return () => {
+      unsubAuth();
+      if (unsubProfile) unsubProfile();
+    };
   }, []);
 
   useEffect(() => {
