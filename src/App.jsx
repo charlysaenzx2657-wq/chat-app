@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { MoreVertical, UserPlus } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { MoreVertical, UserPlus, Bell, BellOff } from "lucide-react";
 import AuthScreen from "./components/AuthScreen";
 import AddFriendModal from "./components/AddFriendModal";
 import RequestsPanel from "./components/RequestsPanel";
@@ -7,8 +7,14 @@ import ChatWindow from "./components/ChatWindow";
 import Avatar from "./components/Avatar";
 import { watchAuthState, logoutUser } from "./lib/auth";
 import { watchIncomingRequests, watchMyChats } from "./lib/friends";
+import {
+  isNotificationSupported,
+  getNotificationPermission,
+  requestNotificationPermission,
+  showMessageNotification,
+} from "./lib/notifications";
 import { db } from "./firebase";
-import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, onSnapshot, collection, query, orderBy, limit } from "firebase/firestore";
 
 export default function App() {
   const [authChecked, setAuthChecked] = useState(false);
@@ -18,6 +24,17 @@ export default function App() {
   const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
   const [showAddFriend, setShowAddFriend] = useState(false);
+  const [notifPermission, setNotifPermission] = useState("default");
+
+  // Refs para leer el valor "actual" dentro de listeners de Firestore,
+  // que se crean una sola vez y si no quedarían con datos viejos (closures).
+  const activeChatIdRef = useRef(null);
+  const appStartRef = useRef(Date.now());
+  activeChatIdRef.current = activeChatId;
+
+  useEffect(() => {
+    if (isNotificationSupported()) setNotifPermission(getNotificationPermission());
+  }, []);
 
   useEffect(() => {
     let unsubProfile = null;
@@ -65,6 +82,41 @@ export default function App() {
     };
   }, [profile?.uid]);
 
+  // Un listener por chat que solo mira el último mensaje: si es nuevo, no es
+  // mío, y no estoy viendo ese chat en este momento, dispara una notificación.
+  useEffect(() => {
+    if (!profile || chats.length === 0) return;
+
+    const unsubs = chats.map((c) => {
+      const q = query(collection(db, "chats", c.id, "messages"), orderBy("createdAt", "desc"), limit(1));
+      return onSnapshot(q, (snap) => {
+        if (snap.empty) return;
+        const msg = snap.docs[0].data();
+        const createdMs = msg.createdAt?.toMillis ? msg.createdAt.toMillis() : null;
+
+        if (
+          msg.sender !== profile.uid &&
+          createdMs &&
+          createdMs > appStartRef.current &&
+          activeChatIdRef.current !== c.id
+        ) {
+          showMessageNotification({
+            senderName: c.otherName || "Nuevo mensaje",
+            text: msg.text,
+            onClick: () => setActiveChatId(c.id),
+          });
+        }
+      });
+    });
+
+    return () => unsubs.forEach((u) => u());
+  }, [profile?.uid, chats.map((c) => c.id).join(",")]);
+
+  async function handleEnableNotifications() {
+    const result = await requestNotificationPermission();
+    setNotifPermission(result);
+  }
+
   if (!authChecked) return null;
 
   if (!user || !profile) {
@@ -101,8 +153,37 @@ export default function App() {
                 <div style={{ fontSize: 10.5, color: "#A8A192" }}>Código: {profile.code}</div>
               </div>
             </div>
-            <MoreVertical size={19} color="#8A8375" style={{ cursor: "pointer" }} onClick={logoutUser} />
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              {isNotificationSupported() && notifPermission !== "granted" && (
+                <BellOff
+                  size={18}
+                  color="#B7591F"
+                  style={{ cursor: "pointer" }}
+                  onClick={handleEnableNotifications}
+                  title="Activar notificaciones"
+                />
+              )}
+              {isNotificationSupported() && notifPermission === "granted" && (
+                <Bell size={18} color="#2E7D6B" title="Notificaciones activadas" />
+              )}
+              <MoreVertical size={19} color="#8A8375" style={{ cursor: "pointer" }} onClick={logoutUser} />
+            </div>
           </div>
+
+          {isNotificationSupported() && notifPermission === "default" && (
+            <div style={{ margin: "0 18px 12px", padding: "10px 12px", background: "#F2EFE8", borderRadius: 12, display: "flex", alignItems: "center", gap: 10 }}>
+              <Bell size={16} color="#8A8375" style={{ flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: "#5A5347", flex: 1, lineHeight: 1.4 }}>
+                Activa notificaciones para saber cuando te escriben
+              </span>
+              <button
+                onClick={handleEnableNotifications}
+                style={{ padding: "6px 10px", borderRadius: 8, border: "none", background: "#2E7D6B", color: "#fff", fontSize: 11.5, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}
+              >
+                Activar
+              </button>
+            </div>
+          )}
 
           <div style={{ padding: "0 18px 14px" }}>
             <button
