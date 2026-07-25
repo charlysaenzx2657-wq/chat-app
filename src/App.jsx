@@ -124,11 +124,13 @@ export default function App() {
                 </p>
               </div>
             )}
-            {chats.map((c) => (
+            {chats.map((c, i) => (
               <div
                 key={c.id}
                 onClick={() => setActiveChatId(c.id)}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 18px", cursor: "pointer" }}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 18px", cursor: "pointer", animation: `fadeUp 0.25s ease ${i * 0.03}s backwards`, transition: "background 0.15s" }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#EFECE5")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               >
                 <Avatar name={c.otherName} />
                 <span style={{ fontSize: 14.5, fontWeight: 600, color: "#2B261E", fontFamily: "'Poppins', sans-serif" }}>{c.otherName}</span>
@@ -139,7 +141,9 @@ export default function App() {
 
         {/* Chat: solo se muestra cuando hay uno activo, con botón de regreso */}
         {showingChat && (
-          <ChatWindow chat={activeChat} me={profile} onBack={() => setActiveChatId(null)} />
+          <div style={{ width: "100%", display: "flex", animation: "slideIn 0.22s ease" }}>
+            <ChatWindow chat={activeChat} me={profile} onBack={() => setActiveChatId(null)} />
+          </div>
         )}
 
         {showAddFriend && <AddFriendModal me={profile} onClose={() => setShowAddFriend(false)} />}
@@ -153,6 +157,10 @@ function GlobalStyles() {
     <style>{`
       * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
       @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes slideIn { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
+      button { transition: transform 0.12s ease, opacity 0.12s ease; }
+      button:active { transform: scale(0.96); }
+      button:hover { opacity: 0.92; }
     `}</style>
   );
 }

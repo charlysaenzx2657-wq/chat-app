@@ -76,7 +76,7 @@ export default function ChatWindow({ chat, me, onBack }) {
           const mine = m.sender === me.uid;
           const isImage = m.fileType?.startsWith("image/");
           return (
-            <div key={m.id} style={{ display: "flex", justifyContent: mine ? "flex-end" : "flex-start" }}>
+            <div key={m.id} style={{ display: "flex", justifyContent: mine ? "flex-end" : "flex-start", animation: "fadeUp 0.25s ease" }}>
               <div
                 style={{
                   maxWidth: "62%",

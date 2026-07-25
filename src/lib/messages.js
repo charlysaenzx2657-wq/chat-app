@@ -6,8 +6,11 @@ import {
   onSnapshot,
   serverTimestamp,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "../firebase";
+import { db } from "../firebase";
+
+// Datos de tu cuenta gratuita de Cloudinary (ver README para obtenerlos)
+const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
 export function watchMessages(chatId, callback) {
   const q = query(collection(db, "chats", chatId, "messages"), orderBy("createdAt", "asc"));
@@ -24,17 +27,31 @@ export async function sendMessage({ chatId, senderUid, text }) {
   });
 }
 
-// Sube un archivo a Firebase Storage y crea el mensaje con su URL de descarga
+// Sube el archivo a Cloudinary (gratis, sin datos fiscales) y guarda el mensaje con su URL
 export async function sendFileMessage({ chatId, senderUid, file }) {
-  const path = `chats/${chatId}/${Date.now()}_${file.name}`;
-  const fileRef = ref(storage, path);
-  await uploadBytes(fileRef, file);
-  const url = await getDownloadURL(fileRef);
+  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+    throw new Error("Falta configurar Cloudinary (revisa el .env)");
+  }
+
+  const form = new FormData();
+  form.append("file", file);
+  form.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`,
+    { method: "POST", body: form }
+  );
+
+  if (!res.ok) {
+    throw new Error("No se pudo subir el archivo");
+  }
+
+  const data = await res.json();
 
   await addDoc(collection(db, "chats", chatId, "messages"), {
     sender: senderUid,
     text: "",
-    fileURL: url,
+    fileURL: data.secure_url,
     fileName: file.name,
     fileType: file.type,
     createdAt: serverTimestamp(),
